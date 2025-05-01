@@ -26,15 +26,15 @@ cd ElsaQuickstarts.ConsoleApp.HelloWorld
 Add the following packages:
 
 ```bash
-dotnet add package Elsa
-dotnet add package Elsa.Activities.Console
+dotnet add package Elsa --version 3.3.5
+dotnet add package Elsa.Activities.Console --version 2.15.1
 ```
 
 ## The Workflow
 
 Create a new file called `HelloWorld.cs` and add the following code:
 
-```clike
+```csharp
 using Elsa.Activities.Console;
 using Elsa.Builders;
 
@@ -56,26 +56,30 @@ The above workflow has only one step (a.k.a. activity): `WriteLine`, which write
 
 Open `Program.cs` and replace its contents with the following:
 
-```clike
-using System.Threading.Tasks;
+```csharp
 using Elsa.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace ElsaQuickstarts.ConsoleApp.HelloWorld
 {
-    class Program
+    internal class Program
     {
-        private static async Task Main()
+        private static async Task Main(string[] args)
         {
-            // Create a service container with Elsa services.
-            var services = new ServiceCollection()
-                .AddElsa(options => options
-                    .AddConsoleActivities()
-                    .AddWorkflow<HelloWorld>())
-                .BuildServiceProvider();
-            
+            // Create the `host` which the application runs within
+            IHost host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices(services =>
+                {
+                    services.AddElsaCore(options =>
+                    {
+                        options.AddConsoleActivities().AddWorkflow<HelloWorld>();
+                    });
+                })
+                .Build();
+
             // Get a workflow runner.
-            var workflowRunner = services.GetRequiredService<IBuildsAndStartsWorkflow>();
+            var workflowRunner = host.Services.GetRequiredService<IBuildsAndStartsWorkflow>();
 
             // Run the workflow.
             await workflowRunner.BuildAndStartWorkflowAsync<HelloWorld>();
